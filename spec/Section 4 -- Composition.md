@@ -4034,11 +4034,24 @@ MergeOutputFields(fields):
 - Let {fieldName} be the name of {firstField}.
 - Let {fieldType} be the type of {firstField}.
 - Let {description} be the description of {firstField}.
+- Let {isDeprecated} be false.
+- Let {deprecationReason} be {null}.
+- If {firstField} is marked with `@deprecated`:
+  - Let {isDeprecated} be true
+  - If the `reason` argument of the `@deprecated` directive is not {null}:
+    - Let {deprecationReason} be the string value of the `reason` argument of
+      the `@deprecated` directive.
 - For each {field} in {fields}:
   - Let {type} be the type of {field}.
   - Set {fieldType} to be the result of {LeastRestrictiveType(fieldType, type)}.
   - If {description} is {null}:
     - Let {description} be the description of {field}.
+  - If {field} is marked with `@deprecated`:
+    - Let {isDeprecated} be true
+    - If {deprecationReason} is {null} and the `reason` argument of the
+      `@deprecated` directive is not {null}:
+      - Let {deprecationReason} be the string value of the `reason` argument of
+        the `@deprecated` directive.
 - Let {mergedArguments} be an empty set.
 - Let {argumentNames} be the set of all argument names in {fields}.
 - For each {argumentName} in {argumentNames}:
@@ -4054,7 +4067,9 @@ MergeOutputFields(fields):
   - If {mergedArgument} is not {null}:
     - Add {mergedArgument} to {mergedArguments}.
 - Return a new field with the name of {fieldName}, type of {fieldType},
-  arguments of {mergedArguments}, and description of {description}.
+  arguments of {mergedArguments}, description of {description} and a
+  `@deprecated` directive with the `reason` argument set to {deprecationReason},
+  if {isDeprecated} is true.
 
 **Explanatory Text**
 
@@ -4062,7 +4077,7 @@ The {MergeOutputFields(fields)} algorithm is used when multiple fields across
 different object or interface types share the same field name and must be merged
 into a single composed field. This algorithm ensures that the final composed
 schema has one definitive definition for that field, resolving differences in
-type, description, and arguments.
+type, description, arguments and deprecation.
 
 _Inaccessible Fields_
 
@@ -4086,6 +4101,12 @@ _Combining Descriptions_
 The first field that defines a description is used as the description for the
 merged field. If no description is found, the merged field will have no
 description.
+
+_Combining @deprecated_
+
+If any of the fields is marked with `@deprecated`, the entire merged field is
+marked as `@deprecated`. The first non-null value of the `reason` argument is
+used as the `reason` for the `@deprecated` directive on the merged field.
 
 _Determining the Field Type_
 
